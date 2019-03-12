@@ -1,7 +1,12 @@
 # SPDX-License-Identifier: GPL-2.0
 # ===========================================================================
-# Kernel configuration targets
-# These targets are used from top-level makefile
+# Build standalone kconf - based on Linux Kernel's scripts7kconfig/*
+
+obj=./
+src=./
+CONFIG_SHELL=/bin/bash
+
+HOST_CC ?= $(CC)
 
 PHONY += xconfig gconfig menuconfig config localmodconfig localyesconfig \
 	build_menuconfig build_nconfig build_gconfig build_xconfig
@@ -19,6 +24,8 @@ endif
 # We need this, in case the user has it in its environment
 unexport CONFIG_
 
+all:	$(obj)/kconf-menuconfig
+
 xconfig: $(obj)/qconf
 	$< $(silent) $(Kconfig)
 
@@ -26,7 +33,8 @@ gconfig: $(obj)/gconf
 	$< $(silent) $(Kconfig)
 
 menuconfig: $(obj)/mconf
-	$< $(silent) $(Kconfig)
+	echo "Kconfig=$(Kconfig)"
+	echo $< $(silent) $(Kconfig)
 
 config: $(obj)/conf
 	$< $(silent) --oldaskconfig $(Kconfig)
@@ -201,9 +209,18 @@ HOSTCFLAGS_gconf.o  = $(shell . $(obj)/gconf-cfg && echo $$cflags)
 $(obj)/gconf.o: $(obj)/gconf-cfg
 
 # check if necessary packages are available, and configure build flags
-filechk_conf_cfg = $(CONFIG_SHELL) $<
-
-$(obj)/%conf-cfg: $(src)/%conf-cfg.sh FORCE
-	$(call filechk,conf_cfg)
+$(obj)/%conf-cfg: $(src)/%conf-cfg.sh
+	mkdir -p $(shell dirname "$@")
+	$< > $@
 
 clean-files += *conf-cfg
+
+$(obj)/mconf:	$(mconf-objs)
+	$(HOST_CC) -o $@ $(mconf-objs) $(HOSTLDLIBS_mconf)
+
+$(obj)/kconf-menuconfig:	$(obj)/mconf
+	@cp -p $< $@
+
+clean:
+	@rm -f $(addprefix $(obj)/,$(hostprogs-y))
+	@rm -f $(obj)/kconf-menuconfig $(obj)/*.o $(obj)/lxdialog/*.o

@@ -3,6 +3,7 @@
 #
 *.moc
 *conf-cfg
+*.o
 
 #
 # configuration programs
@@ -12,3 +13,5 @@ mconf
 nconf
 qconf
 gconf
+
+kconf-menuconfig
